@@ -1,28 +1,32 @@
 # -*- coding: utf-8 -*-
+import json
+import time
 import logging
 
 import requests
-from flask import Flask, request, Response, g, abort
+from flask import request, Response, g, abort, Blueprint
 from flask.views import MethodView
 
 from api_gateway.utils.redis_helper import RedisHelper
 from api_gateway.utils.sign_request import ServerSignRequestHandler, SignRequestException
 from api_gateway.utils.utils import text_type
+from api_gateway.utils.sqlite_utils import get_route as get_route_from_sqlite, get_user, get_user_route
 import settings
 
-app = Flask(__name__.split('.')[0])
+
+proxy_blueprint = Blueprint('proxy', __name__)
 
 
-@app.before_request
+@proxy_blueprint.before_request
 def check_signature():
     if 'X-Api-Access-Key' not in request.headers:
         abort(400, 'X-Api-Access-Key not found in headers')
     access_key = request.headers['X-Api-Access-Key']
-    app_key = RedisHelper.get_app_key(access_key)
-    if not app_key:
+    user = get_user(access_key)
+    if not user:
         abort(400, 'Access key is invalid')
-    g.secret_key = app_key['secret_key']
-    sign_request_handler = ServerSignRequestHandler(g.secret_key,
+    g.user = user
+    sign_request_handler = ServerSignRequestHandler(user['secret_key'],
                                                     settings.SIGNATURE_EXPIRE_SECONDS,
                                                     request.headers,
                                                     request.method,
@@ -34,59 +38,65 @@ def check_signature():
         return abort(400, e.message)
 
 
-@app.before_request
+@proxy_blueprint.before_request
 def get_route():
     if not request.view_args:
         abort(404)
     route_name = '_'.join([p for p in request.view_args['path'].split('/') if p])
-    route = RedisHelper.get_route(route_name)
+    route = get_route_from_sqlite(route_name)
     if not route:
         abort(404)
     g.route = route
 
 
-# @app.route('/', defaults={'path': ''})
-# @app.route('/<path:path>')
-def proxy(path):
-    url = g.route['url']
-    raw_response = requests.get(url, stream=True, params=request.args)
+def get_user_record_name():
+    return '_'.join(['user_request_record', str(g.user['id']), str(g.route['id'])])
 
-    def generate():
-        for chunk in raw_response.iter_content(settings.CHUNK_SIZE):
-            yield chunk
-    response = Response(generate())
-    _set_response_headers(response, raw_response.headers)
+
+def get_api_record_name():
+    return '_'.join(['api_request_record', str(g.route['id'])])
+
+
+@proxy_blueprint.before_request
+def check_request_limit():
+    redis_client = RedisHelper.get_client()
+
+    user_route = get_user_route(g.user['id'], g.route['id'])
+    user_record_name = get_user_record_name()
+    if user_route and user_route['limits'] and user_route['seconds'] and redis_client.get(user_record_name):
+        user_record = json.loads(redis_client.get(user_record_name))
+        if len(user_record) == user_route['limits'] and int(time.time()) - user_record[-1] < user_route['seconds']:
+            abort(400, 'Limit Exceeded Exception for access_key %s, api %s' % (g.user['access_key'], g.route['name']))
+
+    api_record_name = get_api_record_name()
+    if g.route['limits'] and g.route['seconds'] and redis_client.get(api_record_name):
+        api_record = json.loads(redis_client.get(api_record_name))
+        if len(api_record) == g.route['limits'] and int(time.time()) - api_record[-1] < g.route['seconds']:
+            abort(400, 'Limit Exceeded Exception for api %s' % g.route['name'])
+
+
+@proxy_blueprint.after_request
+def record_request(response):
+    if response.status_code >= 400:
+        return response
+    redis_client = RedisHelper.get_client()
+
+    user_record_name = get_user_record_name()
+    user_record = json.loads(redis_client.get(user_record_name)) if redis_client.get(user_record_name) else []
+    user_record.insert(0, int(time.time()))
+    user_route = get_user_route(g.user['id'], g.route['id'])
+    if user_route and user_route['limits'] and len(user_record) > user_route['limits']:
+        user_record = user_record[:user_route['limits']]
+    redis_client.set(user_record_name, json.dumps(user_record))
+
+    api_record_name = get_api_record_name()
+    api_record = json.loads(redis_client.get(api_record_name)) if redis_client.get(api_record_name) else []
+    api_record.insert(0, int(time.time()))
+    if g.route['limits'] and len(api_record) > g.route['limits']:
+        api_record = api_record[:g.route['limits']]
+    redis_client.set(api_record_name, json.dumps(api_record))
+
     return response
-
-
-def _set_response_headers(response, raw_headers):
-        for (k, v) in raw_headers.items():
-            if k == 'Server' or k == 'X-Powered-By':
-                # 隐藏后端网站真实服务器名称
-                pass
-            elif k == 'Transfer-Encoding' and v.lower() == 'chunked':
-                # 如果设置了分块传输编码，但是实际上代理这边已经完整接收数据
-                # 到了浏览器端会导致(failed)net::ERR_INVALID_CHUNKED_ENCODING
-                pass
-            # elif k == 'Location':
-            #     # API不存在301, 302跳转, 过滤Location
-            #     pass
-            elif k == 'Content-Length':
-                # 代理传输过程如果采用了压缩，会导致remote传递过来的content-length与实际大小不符
-                # 会导致后面self.write(response.body)出现错误
-                # 可以不设置remote headers的content-length
-                # "Tried to write more data than Content-Length")
-                # HTTPOutputError: Tried to write more data than Content-Length
-                pass
-            elif k == 'Content-Encoding':
-                # 采用什么编码传给请求的客户端是由Server所在的HTTP服务器处理的
-                pass
-            elif k == 'Set-Cookie':
-                # Set-Cookie是可以有多个，需要一个个添加，不能覆盖掉旧的
-                # 理论上不存在 Set-Cookie,可以过滤
-                response.headers.add(k, v)
-            else:
-                response.headers.set(k, v)
 
 
 class ProxyMethodView(MethodView):
@@ -108,7 +118,7 @@ class ProxyMethodView(MethodView):
             for chunk in raw_response.iter_content(settings.CHUNK_SIZE):
                 yield chunk
         response = Response(generate())
-        _set_response_headers(response, raw_response.headers)
+        self._set_response_headers(response, raw_response.headers)
         return response
 
     def _clean_request_headers(self):
@@ -139,9 +149,34 @@ class ProxyMethodView(MethodView):
         new_headers['Host'] = g.route['netloc']
         return new_headers
 
+    def _set_response_headers(self, response, raw_headers):
+            for (k, v) in raw_headers.items():
+                if k == 'Server' or k == 'X-Powered-By':
+                    # 隐藏后端网站真实服务器名称
+                    pass
+                elif k == 'Transfer-Encoding' and v.lower() == 'chunked':
+                    # 如果设置了分块传输编码，但是实际上代理这边已经完整接收数据
+                    # 到了浏览器端会导致(failed)net::ERR_INVALID_CHUNKED_ENCODING
+                    pass
+                # elif k == 'Location':
+                #     # API不存在301, 302跳转, 过滤Location
+                #     pass
+                elif k == 'Content-Length':
+                    # 代理传输过程如果采用了压缩，会导致remote传递过来的content-length与实际大小不符
+                    # 会导致后面self.write(response.body)出现错误
+                    # 可以不设置remote headers的content-length
+                    # "Tried to write more data than Content-Length")
+                    # HTTPOutputError: Tried to write more data than Content-Length
+                    pass
+                elif k == 'Content-Encoding':
+                    # 采用什么编码传给请求的客户端是由Server所在的HTTP服务器处理的
+                    pass
+                elif k == 'Set-Cookie':
+                    # Set-Cookie是可以有多个，需要一个个添加，不能覆盖掉旧的
+                    # 理论上不存在 Set-Cookie,可以过滤
+                    response.headers.add(k, v)
+                else:
+                    response.headers.set(k, v)
 
-app.add_url_rule('/<path:path>', view_func=ProxyMethodView.as_view('proxy'), methods=['GET', 'POST'])
 
-
-if __name__ == '__main__':
-    app.run()
+proxy_blueprint.add_url_rule('/<path:path>', view_func=ProxyMethodView.as_view('proxy'), methods=['GET', 'POST'])

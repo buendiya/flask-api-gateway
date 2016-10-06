@@ -114,11 +114,11 @@ if __name__ == '__main__':
 
     def test1():
         r = request.get('/classify/color/?q=hello', params={'first': 20})
-        print(type(r.content))
-        print(type(r.text))
         home_directory = os.path.expanduser('~')
         with open(os.path.join(home_directory, 'test.html'), 'w') as f:
             f.write(r.content)
+        if r.status_code != 200:
+            print r.content
 
     def test2():
         r = request.get('/get/test/', params={'pk': 1})
@@ -130,4 +130,4 @@ if __name__ == '__main__':
                          headers={'Content-Type': 'application/json'})
         print(r.content)
 
-    test3()
+    test1()

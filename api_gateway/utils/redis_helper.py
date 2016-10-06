@@ -53,8 +53,8 @@ class RedisHelper(object):
                 return route
 
     @classmethod
-    def get_app_key(cls, access_key):
-        app_keys = json.loads(cls.get_client().get('app_keys'))
-        for app_key in app_keys:
-            if app_key['access_key'] == access_key:
-                return app_key
+    def get_user(cls, access_key):
+        users = json.loads(cls.get_client().get('users'))
+        for user in users:
+            if user['access_key'] == access_key:
+                return user

@@ -11,15 +11,17 @@ create table route(
   name text not null,
   url text not null,
   netloc text not null,
-  limits text not null
+  limits integer,
+  seconds integer
 );
 
 drop table if exists user_route;
 create table user_route(
   id integer primary key autoincrement,
-  user integer,
-  route integer,
-  limits text not null,
-  FOREIGN KEY(user) REFERENCES user(id),
-  FOREIGN KEY(route) REFERENCES route(id)
+  user_id integer,
+  route_id integer,
+  limits integer,
+  seconds integer,
+  FOREIGN KEY(user_id) REFERENCES user(id),
+  FOREIGN KEY(route_id) REFERENCES route(id)
 );

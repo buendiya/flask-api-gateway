@@ -9,8 +9,6 @@ import os
 
 # 当前目录所在路径
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
-# 日志所在目录
-LOG_PATH = os.path.join(BASE_PATH, 'logs')
 
 DEBUG = True
 
@@ -18,17 +16,25 @@ DEBUG = True
 # 通过特殊的状态码, 区分后端 API Server 返回的状态码
 GATEWAY_ERROR_STATUS_CODE = 600
 
-# 可以给日志对象设置日志级别，低于该级别的日志消息将会被忽略
-# CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
-LOGGING_LEVEL = 'DEBUG' if DEBUG else 'INFO'
-LOGGING_HANDLERS = ['console'] if DEBUG else ['file']
-
-
 # 访问签名的有效时间,秒
 SIGNATURE_EXPIRE_SECONDS = 3600
 
 
 CHUNK_SIZE = 1024
+
+FLASK_CONFIG = {'DEBUG': DEBUG,
+                }
+
+DATABASE_PATH = os.path.join(BASE_PATH, 'api_gateway.db')
+
+# 日志所在目录
+LOG_PATH = os.path.join(BASE_PATH, 'logs')
+
+# 可以给日志对象设置日志级别，低于该级别的日志消息将会被忽略
+# CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
+LOGGING_LEVEL = 'DEBUG' if DEBUG else 'INFO'
+LOGGING_HANDLERS = ['console'] if DEBUG else ['file']
+
 
 if not os.path.exists(LOG_PATH):
     # 创建日志文件夹

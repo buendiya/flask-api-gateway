@@ -1,31 +1,15 @@
 # -*- coding: utf-8 -*-
 from sqlite3 import dbapi2 as sqlite3
 
-from flask import g, Blueprint
-
-sqlite_blueprint = Blueprint('sqlite', __name__)
+from flask import g
+from api_gateway import settings
 
 
 def connect_db():
     """Connects to the specific database."""
-    rv = sqlite3.connect(app.config['DATABASE'])
+    rv = sqlite3.connect(settings.DATABASE_PATH)
     rv.row_factory = sqlite3.Row
     return rv
-
-
-def init_db():
-    """Initializes the database."""
-    db = get_db()
-    with app.open_resource('schema.sql', mode='r') as f:
-        db.cursor().executescript(f.read())
-    db.commit()
-
-
-@app.cli.command('initdb')
-def initdb_command():
-    """Creates the database tables."""
-    init_db()
-    print('Initialized the database.')
 
 
 def get_db():
@@ -37,9 +21,27 @@ def get_db():
     return g.sqlite_db
 
 
-@app.teardown_appcontext
-def close_db(error):
-    """Closes the database again at the end of the request."""
-    if hasattr(g, 'sqlite_db'):
-        g.sqlite_db.close()
+def query_db(query, args=(), one=False):
+    cur = get_db().execute(query, args)
+    rv = cur.fetchall()
+    cur.close()
+    return (rv[0] if rv else None) if one else rv
 
+
+def get_route(route_name):
+    db = get_db()
+    cur = db.execute("SELECT * FROM route WHERE name = ?", (route_name,))
+    return cur.fetchone()
+
+
+def get_user(access_key):
+    db = get_db()
+    cur = db.execute("SELECT * FROM user WHERE access_key = ?", (access_key,))
+    return cur.fetchone()
+
+
+def get_user_route(user_id, route_id):
+    db = get_db()
+    cur = db.execute("SELECT * FROM user_route WHERE user_id = ? AND route_id = ?",
+                     (user_id, route_id))
+    return cur.fetchone()
