@@ -7,8 +7,8 @@ import logging
 import requests
 from future.moves.urllib.parse import urlparse, urlunparse, urlencode
 
-from utils.utils import utf8
-from utils.sign_request import ClientSignRequestHandler
+from api_gateway.utils.utils import utf8
+from api_gateway.utils.sign_request import ClientSignRequestHandler
 
 logger = logging.getLogger(__name__)
 

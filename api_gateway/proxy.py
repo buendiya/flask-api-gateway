@@ -5,9 +5,9 @@ import requests
 from flask import Flask, request, Response, g, abort
 from flask.views import MethodView
 
-from utils.redis_helper import RedisHelper
-from utils.sign_request import ServerSignRequestHandler, SignRequestException
-from utils.utils import text_type
+from api_gateway.utils.redis_helper import RedisHelper
+from api_gateway.utils.sign_request import ServerSignRequestHandler, SignRequestException
+from api_gateway.utils.utils import text_type
 import settings
 
 app = Flask(__name__.split('.')[0])

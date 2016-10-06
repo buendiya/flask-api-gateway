@@ -5,7 +5,7 @@ import json
 
 import redis
 
-import settings
+from api_gateway import settings
 
 __all__ = ['RedisHelper']
 
