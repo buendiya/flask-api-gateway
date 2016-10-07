@@ -15,19 +15,19 @@ users = [{"access_key": "public",
           },
          ]
 
-routes = [{"name": "classify_color",
+routes = [{"path": "/classify/color/",
            "url": "http://www.bing.com/search",
            "netloc": "www.bing.com",
            "seconds": 60,
            "limits": 1
            },
-          {"name": "post_test",
+          {"path": "/post/test/",
            "url": "http://127.0.0.1:8020/demo/car/",
            "netloc": "127.0.0.1",
            "seconds": 60,
            "limits": 1
            },
-          {"name": "get_test",
+          {"path": "/get/test/",
            "url": "http://127.0.0.1:8020/demo/car/",
            "netloc": "127.0.0.1",
            "seconds": 60,
@@ -36,17 +36,17 @@ routes = [{"name": "classify_color",
           ]
 
 
-user_routes = [{"route_name": "classify_color",
+user_routes = [{"route_path": "/classify/color/",
                 "user_access_key": "public",
                 "seconds": 60,
                 "limits": 1
                 },
-               {"route_name": "post_test",
+               {"route_path": "/post/test/",
                 "user_access_key": "public",
                 "seconds": 60,
                 "limits": 1
                 },
-               {"route_name": "get_test",
+               {"route_path": "/get/test/",
                 "user_access_key": "public",
                 "seconds": 60,
                 "limits": 1
@@ -89,11 +89,11 @@ def update_route_table():
     with app.app_context():
         db = get_db()
         for route in routes:
-            cur = db.execute("SELECT * FROM route WHERE name = ?", (route['name'],))
+            cur = db.execute("SELECT * FROM route WHERE path = ?", (route['path'],))
             data = cur.fetchone()
             if data is None:
-                db.execute('insert into route (name, url, netloc, seconds, limits) values (?, ?, ?, ?, ?)',
-                           [route['name'], route['url'], route['netloc'], route['seconds'], route['limits']])
+                db.execute('insert into route (path, url, netloc, seconds, limits) values (?, ?, ?, ?, ?)',
+                           [route['path'], route['url'], route['netloc'], route['seconds'], route['limits']])
         db.commit()
 
 
@@ -106,7 +106,7 @@ def update_user_route_table():
             if user is None:
                 continue
 
-            cur = db.execute("SELECT * FROM route WHERE name = ?", (user_route['route_name'],))
+            cur = db.execute("SELECT * FROM route WHERE path = ?", (user_route['route_path'],))
             route = cur.fetchone()
             if route is None:
                 continue
@@ -127,4 +127,4 @@ def update_sqlite_table():
 
 
 if __name__ == '__main__':
-    update_user_route_table()
+    update_sqlite_table()

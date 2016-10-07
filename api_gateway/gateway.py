@@ -4,7 +4,7 @@ from flask import Flask, g
 import settings
 from api_gateway.proxy import proxy_blueprint
 
-app = Flask(__name__.split('.')[0])
+app = Flask(__name__)
 app.config.update(settings.FLASK_CONFIG)
 app.register_blueprint(proxy_blueprint)
 

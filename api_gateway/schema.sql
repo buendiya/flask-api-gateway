@@ -8,7 +8,7 @@ create table user(
 drop table if exists route;
 create table route(
   id integer primary key autoincrement,
-  name text not null,
+  path text not null,
   url text not null,
   netloc text not null,
   limits integer,

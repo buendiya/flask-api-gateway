@@ -4,13 +4,13 @@ import time
 import logging
 
 import requests
-from flask import request, Response, g, abort, Blueprint
+from flask import request, Response, g, Blueprint, abort
 from flask.views import MethodView
 
 from api_gateway.utils.redis_helper import RedisHelper
 from api_gateway.utils.sign_request import ServerSignRequestHandler, SignRequestException
-from api_gateway.utils.utils import text_type
 from api_gateway.utils.sqlite_utils import get_route as get_route_from_sqlite, get_user, get_user_route
+from api_gateway.utils.utils import text_type
 import settings
 
 
@@ -42,8 +42,7 @@ def check_signature():
 def get_route():
     if not request.view_args:
         abort(404)
-    route_name = '_'.join([p for p in request.view_args['path'].split('/') if p])
-    route = get_route_from_sqlite(route_name)
+    route = get_route_from_sqlite(request.path)
     if not route:
         abort(404)
     g.route = route
@@ -66,13 +65,13 @@ def check_request_limit():
     if user_route and user_route['limits'] and user_route['seconds'] and redis_client.get(user_record_name):
         user_record = json.loads(redis_client.get(user_record_name))
         if len(user_record) == user_route['limits'] and int(time.time()) - user_record[-1] < user_route['seconds']:
-            abort(400, 'Limit Exceeded Exception for access_key %s, api %s' % (g.user['access_key'], g.route['name']))
+            abort(400, 'Limit Exceeded Exception for access_key %s, api %s' % (g.user['access_key'], g.route['path']))
 
     api_record_name = get_api_record_name()
     if g.route['limits'] and g.route['seconds'] and redis_client.get(api_record_name):
         api_record = json.loads(redis_client.get(api_record_name))
         if len(api_record) == g.route['limits'] and int(time.time()) - api_record[-1] < g.route['seconds']:
-            abort(400, 'Limit Exceeded Exception for api %s' % g.route['name'])
+            abort(400, 'Limit Exceeded Exception for api %s' % g.route['path'])
 
 
 @proxy_blueprint.after_request

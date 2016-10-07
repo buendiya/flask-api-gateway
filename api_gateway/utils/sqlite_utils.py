@@ -28,9 +28,9 @@ def query_db(query, args=(), one=False):
     return (rv[0] if rv else None) if one else rv
 
 
-def get_route(route_name):
+def get_route(path):
     db = get_db()
-    cur = db.execute("SELECT * FROM route WHERE name = ?", (route_name,))
+    cur = db.execute("SELECT * FROM route WHERE path = ?", (path,))
     return cur.fetchone()
 
 

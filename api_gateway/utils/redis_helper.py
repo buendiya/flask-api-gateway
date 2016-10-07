@@ -45,11 +45,11 @@ class RedisHelper(object):
             db=settings.REDIS_DB, password=settings.REDIS_PASSWORD)
 
     @classmethod
-    def get_route(cls, route_name):
+    def get_route(cls, path):
         redis_client = cls.get_client()
         routes = json.loads(redis_client.get('routes'))
         for route in routes:
-            if route['name'] == route_name:
+            if route['path'] == path:
                 return route
 
     @classmethod
