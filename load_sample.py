@@ -103,4 +103,4 @@ def load_sqlite_table():
 
 
 if __name__ == '__main__':
-    load_sqlite_table()()
+    load_sqlite_table()
