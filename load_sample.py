@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-import os
-import json
 
-import redis
-
-from api_gateway import settings
 from api_gateway.gateway import app
 from api_gateway.utils.sqlite_utils import get_db
 
@@ -54,26 +49,7 @@ user_routes = [{"route_path": "/classify/color/",
                ]
 
 
-def update_redis_config():
-    client = redis.StrictRedis(
-        host=settings.REDIS_HOST, port=settings.REDIS_PORT,
-        db=settings.REDIS_DB, password=settings.REDIS_PASSWORD
-    )
-
-    client.set('users', json.dumps(users))
-    client.set('routes', json.dumps(routes))
-
-
-def init_db():
-    cur_dir = os.path.dirname(__name__)
-    with app.app_context():
-        db = get_db()
-        with open(os.path.join(cur_dir, 'api_gateway', 'schema.sql'), 'r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-
-
-def update_user_table():
+def load_user_table():
     with app.app_context():
         db = get_db()
         for user in users:
@@ -85,7 +61,7 @@ def update_user_table():
         db.commit()
 
 
-def update_route_table():
+def load_route_table():
     with app.app_context():
         db = get_db()
         for route in routes:
@@ -97,7 +73,7 @@ def update_route_table():
         db.commit()
 
 
-def update_user_route_table():
+def load_user_route_table():
     with app.app_context():
         db = get_db()
         for user_route in user_routes:
@@ -120,11 +96,11 @@ def update_user_route_table():
         db.commit()
 
 
-def update_sqlite_table():
-    update_user_table()
-    update_route_table()
-    update_user_route_table()
+def load_sqlite_table():
+    load_user_table()
+    load_route_table()
+    load_user_route_table()
 
 
 if __name__ == '__main__':
-    update_sqlite_table()
+    load_sqlite_table()()

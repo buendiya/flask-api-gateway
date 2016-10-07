@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, g
 
-import settings
+from api_gateway import settings
 from api_gateway.proxy import proxy_blueprint
 
 app = Flask(__name__)

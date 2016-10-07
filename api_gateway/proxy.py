@@ -3,9 +3,9 @@ import requests
 from flask import request, Response, g, Blueprint
 from flask.views import MethodView
 
+from api_gateway import settings
 from api_gateway.utils.utils import text_type
 from api_gateway.middlewares import check_signature, get_route, check_request_limit, record_request
-import settings
 
 proxy_blueprint = Blueprint('proxy', __name__)
 

@@ -4,10 +4,10 @@ import time
 
 from flask import request, g, abort
 
+from api_gateway import settings
 from api_gateway.utils.redis_helper import RedisHelper
 from api_gateway.utils.sign_request import ServerSignRequestHandler, SignRequestException
 from api_gateway.utils.sqlite_utils import get_route as get_route_from_sqlite, get_user, get_user_route
-import settings
 
 
 def check_signature():

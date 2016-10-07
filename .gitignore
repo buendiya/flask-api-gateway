@@ -92,3 +92,4 @@ ENV/
 .pydevproject
 .settings/*
 *.db
+CONFIGS.py

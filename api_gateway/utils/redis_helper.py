@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals, absolute_import
-import json
-
 import redis
 
 from api_gateway import settings
@@ -43,18 +41,3 @@ class RedisHelper(object):
         RedisHelper._client = redis.StrictRedis(
             host=settings.REDIS_HOST, port=settings.REDIS_PORT,
             db=settings.REDIS_DB, password=settings.REDIS_PASSWORD)
-
-    @classmethod
-    def get_route(cls, path):
-        redis_client = cls.get_client()
-        routes = json.loads(redis_client.get('routes'))
-        for route in routes:
-            if route['path'] == path:
-                return route
-
-    @classmethod
-    def get_user(cls, access_key):
-        users = json.loads(cls.get_client().get('users'))
-        for user in users:
-            if user['access_key'] == access_key:
-                return user
