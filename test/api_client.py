@@ -117,6 +117,7 @@ if __name__ == '__main__':
         home_directory = os.path.expanduser('~')
         with open(os.path.join(home_directory, 'test.html'), 'w') as f:
             f.write(r.content)
+        print r.status_code
         if r.status_code != 200:
             print r.content
 
