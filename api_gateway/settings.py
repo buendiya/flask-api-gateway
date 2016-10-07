@@ -7,7 +7,7 @@ import os
 # 当前目录所在路径
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
-DEBUG = True
+DEBUG = False
 
 # 访问签名的有效时间,秒
 SIGNATURE_EXPIRE_SECONDS = 3600
