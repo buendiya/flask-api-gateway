@@ -16,7 +16,7 @@ def check_signature():
     access_key = request.headers['X-Api-Access-Key']
     user = get_user(access_key)
     if not user:
-        abort(400, 'Access key is invalid')
+        abort(400, 'Access Key not exist')
     g.user = user
     sign_request_handler = ServerSignRequestHandler(user['secret_key'],
                                                     settings.SIGNATURE_EXPIRE_SECONDS,
@@ -31,8 +31,6 @@ def check_signature():
 
 
 def get_route():
-    if not request.view_args:
-        abort(404)
     route = get_route_from_sqlite(request.path)
     if not route:
         abort(404)

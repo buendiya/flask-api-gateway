@@ -1,7 +1,4 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# created by restran on 2015/12/19
-
 from __future__ import unicode_literals, absolute_import
 
 import logging.config
@@ -11,10 +8,6 @@ import os
 BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = True
-
-# 未通过网关鉴权, 或者未能正确请求时返回的状态码
-# 通过特殊的状态码, 区分后端 API Server 返回的状态码
-GATEWAY_ERROR_STATUS_CODE = 600
 
 # 访问签名的有效时间,秒
 SIGNATURE_EXPIRE_SECONDS = 3600
@@ -27,22 +20,40 @@ FLASK_CONFIG = {'DEBUG': DEBUG,
 
 DATABASE_PATH = os.path.join(BASE_PATH, 'api_gateway.db')
 
-# 日志所在目录
-LOG_PATH = os.path.join(BASE_PATH, 'logs')
+# Redis 配置
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+REDIS_DB = 0
+REDIS_PASSWORD = ''
+
 
 # 可以给日志对象设置日志级别，低于该级别的日志消息将会被忽略
 # CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET
 LOGGING_LEVEL = 'DEBUG' if DEBUG else 'INFO'
-LOGGING_HANDLERS = ['console'] if DEBUG else ['file']
 
 
+LOG_PATH = os.path.join(BASE_PATH, 'logs')
 if not os.path.exists(LOG_PATH):
-    # 创建日志文件夹
     os.makedirs(LOG_PATH)
+
+
+def update_configuration():
+    try:
+        from . import CONFIGS as _configs
+    except ImportError:
+        return
+    global_variables = globals()
+    for setting in dir(_configs):
+        if setting == setting.upper():
+            setting_value = getattr(_configs, setting)
+            global_variables[setting] = setting_value
+
+update_configuration()
+
 
 logging.config.dictConfig({
     'version': 1,
-    'disable_existing_loggers': True,
+    'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
             'format': "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
@@ -76,12 +87,9 @@ logging.config.dictConfig({
         }
     },
     'loggers': {
-        '': {
-            'handlers': LOGGING_HANDLERS,
+        'common.logger': {
+            'handlers': ['console', 'file'],
             'level': LOGGING_LEVEL,
         },
     }
 })
-
-if os.path.exists(os.path.join(BASE_PATH, 'CONFIGS.py')):
-    from api_gateway.CONFIGS import *
