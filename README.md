@@ -4,6 +4,7 @@ Api Gateway Built With Flask
 用Flask实现的一个简单的API Gateway
 
 
+&nbsp;
 ## 已实现功能
 
 ### 加密签名
@@ -19,11 +20,13 @@ Api Gateway Built With Flask
 可以通过设置 SIGNATURE_EXPIRE_SECONDS 来控制签名的过期时间，只有在这个时间内的请求才能访问成功。
 
 
+&nbsp;
 ## 路由规则说明
 
 Gateway对外暴露的 url 和要路由到的 url 是一一对应的关系，两个都需要显式声明，这个可以在route表里配置
 
 
+&nbsp;
 ## 表结构说明
 
 共有3张表，分表是user, route, user_route；表结构见schema.sql, 表内容示例见load_sample.py。
@@ -41,6 +44,7 @@ Gateway对外暴露的 url 和要路由到的 url 是一一对应的关系，两
 对每个user, 配置其对每个API的流量控制。
 
 
+&nbsp;
 ## 环境及依赖
 
 测试的 Python 版本: 2.7
@@ -50,6 +54,7 @@ Gateway对外暴露的 url 和要路由到的 url 是一一对应的关系，两
     pip install -r requirement.txt
 
 
+&nbsp;
 ## 运行
 
 配置项可以写在settings.py里配置，也可以写在和settings.py同目录下的 CONFIGS.py 里；
@@ -75,11 +80,13 @@ REDIS_PASSWORD = 'your_password'
     python run.py
 
 
+&nbsp;
 ## 其他
 
 test/api_client.py 里的 APIRequest, 可用于发送包含签名的请求。
 
 
+&nbsp;
 ## 参考
 
 - [Beluga](https://github.com/restran/api-gateway)
